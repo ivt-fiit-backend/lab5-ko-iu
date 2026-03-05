@@ -1,23 +1,24 @@
 import json
 from flask import Flask, abort, jsonify, request
-from flask_restx import Api
+from flask_restx import Api, Resource  # type: ignore
 
 PAGE_SIZE = 25
 
 app = Flask(__name__)
 api = Api(app)
 
+ns = api.namespace('v2', description='Laureats API')
+
 with open('awards.json', encoding='utf-8') as f:
     awards = json.load(f)
 
 with open('laureats.json', encoding='utf-8') as f:
     laureats_data = json.load(f)
-    if isinstance(laureats_data, dict) and 'laureates' in laureats_data:
-        laureats = laureats_data['laureates']
-    elif isinstance(laureats_data, list):
-        laureats = laureats_data
-    else:
-        laureats = []
+
+if isinstance(laureats_data, dict) and 'laureates' in laureats_data:
+    laureats = laureats_data['laureates']
+else:
+    laureats = laureats_data
 
 
 @app.route("/api/v1/awards/")
@@ -28,7 +29,9 @@ def awards_list():
             raise ValueError
     except ValueError:
         return abort(400)
-    page = awards[p * 50:(p + 1) * 50]
+
+    page = awards[p * PAGE_SIZE:(p + 1) * PAGE_SIZE]
+
     return jsonify({
         'page': p,
         'count_on_page': PAGE_SIZE,
@@ -44,19 +47,21 @@ def award_object(pk):
     else:
         abort(404)
 
-
-@app.route("/v2/laureats/")
-def laureats_list():
-    return jsonify(laureats)
-
-
-@app.route("/v2/laureat/<string:id>/")
-def laureat_by_id(id):
-    for laureat in laureats:
-        if laureat['id'] == id:
-            return jsonify(laureat)
-    abort(404, description=f"Лауреат с id {id} не найден")
+@ns.route('/laureats/')
+class LaureatsList(Resource):
+    def get(self):
+        return jsonify(laureats)
 
 
-if __name__ == '__main__':
+@ns.route('/laureat/<string:pk>/')
+class LaureatObject(Resource):
+    def get(self, pk):
+        for laureat in laureats:
+            if laureat.get("id") == pk:
+                return jsonify(laureat)
+
+        abort(404)
+
+
+if __name__ == "__main__":
     app.run(debug=True)
