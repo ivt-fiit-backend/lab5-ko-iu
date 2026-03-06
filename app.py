@@ -2,18 +2,14 @@ import json
 from flask import Flask, abort, jsonify, request
 from flask_restx import Api, Resource  # type: ignore
 
-
 PAGE_SIZE = 25
 
 app = Flask(__name__)
 api = Api(app)
-
 ns = api.namespace("v2", description="Laureats API")
-
 
 with open("awards.json", encoding="utf-8") as f:
     awards = json.load(f)
-
 
 with open("laureats.json", encoding="utf-8") as f:
     laureats_data = json.load(f)
@@ -47,9 +43,7 @@ def awards_list():
 def award_object(pk):
     if 0 <= pk < len(awards):
         return jsonify(awards[pk])
-
     abort(404)
-
 
 
 @ns.route("/laureats/")
@@ -59,7 +53,6 @@ class LaureatsList(Resource):
         return jsonify(laureats)
 
 
-
 @ns.route("/laureat/<string:pk>/")
 class LaureatObject(Resource):
 
@@ -67,7 +60,6 @@ class LaureatObject(Resource):
         for laureat in laureats:
             if laureat.get("id") == pk:
                 return jsonify(laureat)
-
         abort(404)
 
 
